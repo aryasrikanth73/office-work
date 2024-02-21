@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Work and Status Table</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      margin: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .completed {
+      background-color: green;
+    }
+
+    .in-progress {
+      background-color: yellow;
+    }
+
+    .not-started {
+      background-color: red;
+    }
+
+    .completed {
+      color: green;
+    }
+
+    .in-progress {
+      color: #FFA500;
+    }
+
+    .not-started {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Work Table</h2>
+  <table id="work-table">
+    <thead>
+      <tr>
+        <th>S.No.</th>
+        <th>Date</th>
+        <th>Task</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Table rows will be added dynamically using JavaScript -->
+    </tbody>
+  </table>
+
+  <div id="task-form">
+    <h2>Add Task</h2>
+    <input type="text" id="task-name" placeholder="Task Name">
+    <select id="task-status">
+      <option value="Completed">Completed</option>
+      <option value="In Progress">In Progress</option>
+      <option value="Not Started">Not Started</option>
+    </select>
+    <button id="add-task-btn">Add Task</button>
+  </div>
+</div>
+   
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const workTableBody = document.querySelector("#work-table tbody");
+  const taskNameInput = document.getElementById("task-name");
+  const taskStatusSelect = document.getElementById("task-status");
+  const addTaskBtn = document.getElementById("add-task-btn");
+
+  let tasks = [];
+
+  // Load tasks from local storage
+  if (localStorage.getItem("tasks")) {
+    tasks = JSON.parse(localStorage.getItem("tasks"));
+    renderTasks();
+  }
+
+  // Function to add a task to the table
+  function addTask(taskName, status) {
+    const task = { 
+      serialNumber: tasks.length + 1,
+      date: new Date().toLocaleDateString(),
+      taskName, 
+      status 
+    };
+    tasks.push(task);
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    renderTasks();
+  }
+
+  // Function to render tasks in the table
+  function renderTasks() {
+    workTableBody.innerHTML = "";
+    tasks.forEach((task, index) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${task.serialNumber}</td>
+        <td>${task.date}</td>
+        <td>${task.taskName}</td>
+        <td class="status" data-index="${index}">${task.status}</td>
+        <td>
+          <button class="edit-btn" data-index="${index}">Edit</button>
+          <button class="delete-btn" data-index="${index}">Delete</button>
+        </td>
+      `;
+      row.querySelector('.status').style.color = getStatusColor(task.status);
+      workTableBody.appendChild(row);
+    });
+  }
+
+  // Add Task button event listener
+  addTaskBtn.addEventListener("click", function() {
+    const taskName = taskNameInput.value.trim();
+    const status = taskStatusSelect.value;
+    if (taskName) {
+      addTask(taskName, status);
+      taskNameInput.value = "";
+    }
+  });
+
+  // Event delegation for edit and delete buttons
+  workTableBody.addEventListener("click", function(event) {
+    const target = event.target;
+    if (target.classList.contains("edit-btn")) {
+      const index = target.getAttribute("data-index");
+      const statusCell = workTableBody.querySelector(`.status[data-index="${index}"]`);
+      const dropdown = createStatusDropdown(tasks[index].status);
+      statusCell.innerHTML = "";
+      statusCell.appendChild(dropdown);
+    } else if (target.classList.contains("delete-btn")) {
+      const index = target.getAttribute("data-index");
+      tasks.splice(index, 1);
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+      renderTasks();
+    }
+  });
+
+  // Function to create a dropdown for status
+  function createStatusDropdown(selectedStatus) {
+    const dropdown = document.createElement("select");
+    dropdown.classList.add("status-dropdown");
+    const options = ['Completed', 'In Progress', 'Not Started'];
+    options.forEach(option => {
+      const optionElement = document.createElement("option");
+      optionElement.value = option;
+      optionElement.textContent = option;
+      if (option === selectedStatus) {
+        optionElement.selected = true;
+      }
+      dropdown.appendChild(optionElement);
+    });
+    dropdown.addEventListener("change", function(event) {
+      const index = event.target.parentElement.getAttribute("data-index");
+      tasks[index].status = event.target.value;
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+      renderTasks();
+    });
+    return dropdown;
+  }
+
+  // Function to get text color based on status
+  function getStatusColor(status) {
+    switch(status) {
+      case 'Completed':
+        return 'green';
+      case 'In Progress':
+        return '#FFA500';
+      case 'Not Started':
+        return 'red';
+      default:
+        return 'black';
+    }
+  }
+});
+
+</script>
+</body>
+</html>
